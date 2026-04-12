@@ -2,6 +2,7 @@ import re
 import io
 from pathlib import Path
 
+import streamlit as st
 import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials as ServiceAccountCredentials
@@ -18,12 +19,6 @@ FMS_PARENT_FOLDER_ID = "1VE3CjdXrAH-Ic9v8sHcz5K4BygAD0Z6w"
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 IO_LAYER_DIR = Path(__file__).resolve().parent
-
-SERVICE_ACCOUNT_PATHS = [
-    PROJECT_ROOT / "credentials.json",
-    IO_LAYER_DIR / "credentials.json",
-    Path("credentials.json").resolve(),
-]
 
 DRIVE_CLIENT_SECRET_PATHS = [
     PROJECT_ROOT / "drive_oauth_client_secret.json",
@@ -57,10 +52,6 @@ def _find_existing_path(paths, label: str) -> str:
     )
 
 
-def _get_service_account_file():
-    return _find_existing_path(SERVICE_ACCOUNT_PATHS, "credentials.json")
-
-
 def _get_drive_client_secret_file():
     return _find_existing_path(
         DRIVE_CLIENT_SECRET_PATHS,
@@ -69,11 +60,26 @@ def _get_drive_client_secret_file():
 
 
 def get_client():
-    creds = ServiceAccountCredentials.from_service_account_file(
-        _get_service_account_file(),
-        scopes=SHEETS_SCOPES,
+    if "gcp_service_account" in st.secrets:
+        creds = ServiceAccountCredentials.from_service_account_info(
+            dict(st.secrets["gcp_service_account"]),
+            scopes=SHEETS_SCOPES,
+        )
+        return gspread.authorize(creds)
+
+    local_creds_path = PROJECT_ROOT / "credentials.json"
+    if local_creds_path.exists():
+        creds = ServiceAccountCredentials.from_service_account_file(
+            str(local_creds_path),
+            scopes=SHEETS_SCOPES,
+        )
+        return gspread.authorize(creds)
+
+    raise FileNotFoundError(
+        "Google Sheets credentials were not found. "
+        "Use Streamlit secrets with [gcp_service_account] in cloud, "
+        "or place credentials.json in the project root for local use."
     )
-    return gspread.authorize(creds)
 
 
 def _get_drive_user_credentials():
@@ -178,7 +184,6 @@ def load_company_rows_from_shared_tab(company_name, tab_name):
     if company_col is None:
         return df
 
-    # ADMIN "ALL" SUPPORT
     if str(company_name).strip().upper() == "ALL":
         return df.reset_index(drop=True)
 
@@ -211,7 +216,6 @@ def save_company_rows_to_shared_tab(df, company_name, tab_name):
         company_col = "company_name"
         df[company_col] = company_name
 
-    # If admin is saving from ALL view, don't wipe out everyone else's rows.
     if str(company_name).strip().upper() == "ALL":
         combined_df = df.copy()
     else:
