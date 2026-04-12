@@ -5,7 +5,10 @@ import json
 import pandas as pd
 
 import math
-import cv2
+try:
+    import cv2
+except Exception:
+    cv2 = None
 import mediapipe as mp
 import numpy as np
 from PIL import Image, ImageOps
