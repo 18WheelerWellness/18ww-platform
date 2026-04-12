@@ -9,7 +9,10 @@ try:
     import cv2
 except Exception:
     cv2 = None
-import mediapipe as mp
+try:
+    import mediapipe as mp
+except Exception:
+    mp = None
 import numpy as np
 from PIL import Image, ImageOps
 from typing import Dict
@@ -38,8 +41,7 @@ from io_layer.google_company_store import (
     load_company_rows_from_shared_tab,
     save_company_rows_to_shared_tab,
 )
-
-mp_pose = mp.solutions.pose
+mp_pose = mp.solutions.pose if mp else None
 SUPPORTED_VIEWS = ["front", "side", "back"]
 
 BRAND_NAVY = "#0F1B38"
@@ -505,6 +507,11 @@ def build_points(lm, w, h) -> Dict[str, np.ndarray]:
 
 
 def analyze_uploaded_image(uploaded_file, view: str):
+    if cv2 is None:
+        return {"status": "error", "error": "OpenCV is not available in this cloud build."}
+    if mp_pose is None:
+        return {"status": "error", "error": "MediaPipe is not available in this cloud build."}
+
     image = image_to_bgr(uploaded_file)
     h, w, _ = image.shape
     overlay = image.copy()
