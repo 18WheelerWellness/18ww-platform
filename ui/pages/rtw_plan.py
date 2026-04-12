@@ -534,6 +534,9 @@ def show_rtw_plan():
     else:
         show_cols = [c for c in ["phase", "step_number", "action_item", "completed"] if c in workflow_df.columns]
         st.dataframe(workflow_df[show_cols], width="stretch", hide_index=True)
-def show_rtw_plan():
-    st.title("RTW Plan")
-    st.write("RTW Plan page loaded.")
+    st.subheader("Adjuster Communication Snapshot")
+    if workflow_df.empty:
+        st.info("No claims adjuster communication steps found for this claim yet.")
+    else:
+        show_cols = [c for c in ["phase", "step_number", "action_item", "completed"] if c in workflow_df.columns]
+        st.dataframe(workflow_df[show_cols], width="stretch", hide_index=True)
