@@ -4,7 +4,7 @@ import pandas as pd
 from io_layer.cleaners import clean_column_names, strip_whitespace, drop_exact_duplicates
 from io_layer.google_company_store import load_company_rows_from_shared_tab
 
-CLAIMS_TAB_NAME = "Claims"
+CLAIMS_TAB_NAME = "claims"
 
 
 def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
