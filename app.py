@@ -699,7 +699,6 @@ def _save_fms_history_row(company_name: str, row_df: pd.DataFrame) -> None:
 
 
 def main():
-    st.set_page_config(page_title="18WW FMS Page", page_icon="📋", layout="wide")
     apply_page_style()
     render_header()
     render_protocol_box()
