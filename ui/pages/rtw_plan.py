@@ -233,12 +233,184 @@ def _normalize_claims_df(df: pd.DataFrame, company_name: str) -> pd.DataFrame:
 def _normalize_workflow_df(df: pd.DataFrame) -> pd.DataFrame:
     if df.empty:
         return pd.DataFrame()
+
     df = df.copy()
-    for col in ["claim_number", "action_item", "completed"]:
+    needed_cols = [
+        "company_name",
+        "claim_number",
+        "driver_name",
+        "phase",
+        "step_number",
+        "action_item",
+        "completed",
+        "adjuster_name",
+        "adjuster_email",
+        "adjuster_phone",
+        "contact_date",
+        "contact_type",
+        "subject",
+        "message_summary",
+        "requested_action",
+        "response_status",
+        "follow_up_date",
+        "next_step",
+        "notes",
+    ]
+    for col in needed_cols:
         if col not in df.columns:
             df[col] = ""
+
     df["completed"] = df["completed"].apply(_normalize_yes_no)
     return df
+
+
+def _render_adjuster_section(workflow_df: pd.DataFrame, company_name: str, claim_number: str, driver_name: str = ""):
+    st.subheader("Adjuster Communication")
+
+    base_df = _normalize_workflow_df(workflow_df)
+    display_df = base_df.copy()
+
+    if not display_df.empty:
+        if "contact_date" in display_df.columns:
+            display_df["_sort"] = pd.to_datetime(display_df["contact_date"], errors="coerce")
+            display_df = display_df.sort_values("_sort", ascending=False, na_position="last")
+        elif "step_number" in display_df.columns:
+            display_df["_sort"] = pd.to_numeric(display_df["step_number"], errors="coerce")
+            display_df = display_df.sort_values("_sort", ascending=False, na_position="last")
+
+    latest = display_df.iloc[0] if not display_df.empty else pd.Series(dtype=object)
+
+    st.markdown("### Enter New Adjuster Communication")
+    c1, c2 = st.columns(2)
+
+    contact_type_options = ["", "Email", "Phone Call", "Voicemail", "Portal Message", "Fax", "Other"]
+    response_status_options = ["", "Pending", "Approved", "Denied", "Needs More Info", "Follow-Up Needed", "Closed"]
+
+    latest_contact_type = _safe_str(latest.get("contact_type", ""))
+    latest_response_status = _safe_str(latest.get("response_status", latest.get("completed", "")))
+
+    with c1:
+        adjuster_name = st.text_input("Adjuster Name", value=_safe_str(latest.get("adjuster_name", "")), key=f"adj_name_{claim_number}")
+        adjuster_email = st.text_input("Adjuster Email", value=_safe_str(latest.get("adjuster_email", "")), key=f"adj_email_{claim_number}")
+        adjuster_phone = st.text_input("Adjuster Phone", value=_safe_str(latest.get("adjuster_phone", "")), key=f"adj_phone_{claim_number}")
+        contact_date = st.text_input("Contact Date", value=_safe_str(latest.get("contact_date", "")), key=f"adj_contact_date_{claim_number}")
+        contact_type = st.selectbox(
+            "Contact Type",
+            contact_type_options,
+            index=contact_type_options.index(latest_contact_type) if latest_contact_type in contact_type_options else 0,
+            key=f"adj_contact_type_{claim_number}",
+        )
+
+    with c2:
+        subject = st.text_input("Subject", value=_safe_str(latest.get("subject", "")), key=f"adj_subject_{claim_number}")
+        response_status = st.selectbox(
+            "Response Status",
+            response_status_options,
+            index=response_status_options.index(latest_response_status) if latest_response_status in response_status_options else 0,
+            key=f"adj_response_status_{claim_number}",
+        )
+        follow_up_date = st.text_input("Follow-Up Date", value=_safe_str(latest.get("follow_up_date", "")), key=f"adj_followup_{claim_number}")
+        requested_action = st.text_input("Requested Action", value=_safe_str(latest.get("requested_action", "")), key=f"adj_requested_action_{claim_number}")
+        next_step = st.text_input("Next Step", value=_safe_str(latest.get("next_step", "")), key=f"adj_next_step_{claim_number}")
+
+    s1, s2 = st.columns(2)
+    with s1:
+        message_summary = st.text_area(
+            "Communication Summary",
+            value=_safe_str(latest.get("message_summary", latest.get("action_item", ""))),
+            height=110,
+            key=f"adj_summary_{claim_number}",
+        )
+    with s2:
+        notes = st.text_area(
+            "Notes",
+            value=_safe_str(latest.get("notes", "")),
+            height=110,
+            key=f"adj_notes_{claim_number}",
+        )
+
+    save_col1, save_col2 = st.columns([1, 3])
+    with save_col1:
+        if st.button("Save Adjuster Communication", use_container_width=True, key=f"save_adj_{claim_number}"):
+            next_step_number = 1
+            if not display_df.empty and "step_number" in display_df.columns:
+                nums = pd.to_numeric(display_df["step_number"], errors="coerce").dropna()
+                if not nums.empty:
+                    next_step_number = int(nums.max()) + 1
+
+            new_row = {
+                "company_name": company_name,
+                "claim_number": claim_number,
+                "driver_name": driver_name,
+                "phase": "Adjuster Communication",
+                "step_number": str(next_step_number),
+                "action_item": message_summary or subject or "Adjuster communication",
+                "completed": "Yes" if _safe_str(response_status).strip() else "No",
+                "adjuster_name": adjuster_name,
+                "adjuster_email": adjuster_email,
+                "adjuster_phone": adjuster_phone,
+                "contact_date": contact_date,
+                "contact_type": contact_type,
+                "subject": subject,
+                "message_summary": message_summary,
+                "requested_action": requested_action,
+                "response_status": response_status,
+                "follow_up_date": follow_up_date,
+                "next_step": next_step,
+                "notes": notes,
+            }
+
+            updated_df = pd.concat([base_df, pd.DataFrame([new_row])], ignore_index=True)
+            save_company_rows_to_shared_tab(updated_df, company_name, "claims_adjuster_communication")
+            st.success("Adjuster communication saved to Google Sheets. Refresh or reopen the claim to see the updated timeline.")
+
+    st.markdown("### Latest Adjuster Status")
+    if display_df.empty:
+        st.info("No saved adjuster communication for this claim yet. Enter the form above and click Save.")
+        return
+
+    latest = display_df.iloc[0]
+    c3, c4 = st.columns(2)
+    with c3:
+        st.text_input("Adjuster Name", value=_safe_str(latest.get("adjuster_name", "")), disabled=True, key=f"latest_adj_name_{claim_number}")
+        st.text_input("Adjuster Email", value=_safe_str(latest.get("adjuster_email", "")), disabled=True, key=f"latest_adj_email_{claim_number}")
+        st.text_input("Adjuster Phone", value=_safe_str(latest.get("adjuster_phone", "")), disabled=True, key=f"latest_adj_phone_{claim_number}")
+        st.text_input("Last Contact Date", value=_safe_str(latest.get("contact_date", "")), disabled=True, key=f"latest_contact_date_{claim_number}")
+    with c4:
+        st.text_input("Contact Type", value=_safe_str(latest.get("contact_type", "")), disabled=True, key=f"latest_contact_type_{claim_number}")
+        st.text_input("Subject", value=_safe_str(latest.get("subject", "")), disabled=True, key=f"latest_subject_{claim_number}")
+        st.text_input("Response Status", value=_safe_str(latest.get("response_status", latest.get("completed", ""))), disabled=True, key=f"latest_status_{claim_number}")
+        st.text_input("Next Follow-Up Date", value=_safe_str(latest.get("follow_up_date", "")), disabled=True, key=f"latest_followup_{claim_number}")
+
+    st.markdown("### Adjuster Communication Timeline")
+    timeline_cols = [
+        "contact_date",
+        "contact_type",
+        "subject",
+        "action_item",
+        "message_summary",
+        "requested_action",
+        "response_status",
+        "follow_up_date",
+        "completed",
+    ]
+    timeline_cols = [c for c in timeline_cols if c in display_df.columns]
+
+    timeline_df = display_df[timeline_cols].copy()
+    timeline_df = timeline_df.rename(
+        columns={
+            "contact_date": "Contact Date",
+            "contact_type": "Type",
+            "subject": "Subject",
+            "action_item": "Action Item",
+            "message_summary": "Summary",
+            "requested_action": "Requested Action",
+            "response_status": "Status",
+            "follow_up_date": "Follow-Up",
+            "completed": "Completed",
+        }
+    )
+    st.dataframe(timeline_df, width="stretch", hide_index=True)
 
 def _normalize_rtw_df(df: pd.DataFrame, company_name: str) -> pd.DataFrame:
     if df.empty:
@@ -528,15 +700,4 @@ def show_rtw_plan():
         st.success("RTW Plan saved.")
         st.rerun()
 
-    st.subheader("Adjuster Communication Snapshot")
-    if workflow_df.empty:
-        st.info("No claims adjuster communication steps found for this claim yet.")
-    else:
-        show_cols = [c for c in ["phase", "step_number", "action_item", "completed"] if c in workflow_df.columns]
-        st.dataframe(workflow_df[show_cols], width="stretch", hide_index=True)
-    st.subheader("Adjuster Communication Snapshot")
-    if workflow_df.empty:
-        st.info("No claims adjuster communication steps found for this claim yet.")
-    else:
-        show_cols = [c for c in ["phase", "step_number", "action_item", "completed"] if c in workflow_df.columns]
-        st.dataframe(workflow_df[show_cols], width="stretch", hide_index=True)
+    _render_adjuster_section(workflow_df, company_name, selected_claim, _safe_str(plan.get("driver_name", "")))
