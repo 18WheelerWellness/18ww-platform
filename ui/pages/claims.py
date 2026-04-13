@@ -7,8 +7,36 @@ from io_layer.google_company_store import load_company_rows_from_shared_tab
 CLAIMS_TAB_NAME = "claims"
 
 
+def _first_existing_column(df: pd.DataFrame, candidates: list[str]) -> str | None:
+    for col in candidates:
+        if col in df.columns:
+            return col
+    return None
+
+
 def _add_lag_metrics(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
+
+    claim_date_col = _first_existing_column(df, [
+        "claim_date",
+        "date_of_injury",
+        "injury_date",
+        "doi",
+    ])
+
+    reported_date_col = _first_existing_column(df, [
+        "date_reported_to_wc",
+        "date_reported",
+        "reported_date",
+        "wc_report_date",
+        "date_reported_to_carrier",
+    ])
+
+    if claim_date_col:
+        df["claim_date"] = df[claim_date_col]
+
+    if reported_date_col:
+        df["date_reported_to_wc"] = df[reported_date_col]
 
     if "claim_date" in df.columns and "date_reported_to_wc" in df.columns:
         claim_dates = pd.to_datetime(df["claim_date"], errors="coerce")
@@ -26,7 +54,6 @@ def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
     df = drop_exact_duplicates(df)
 
     rename_map = {
-        "date_of_injury": "claim_date",
         "injury_area": "body_part",
     }
     df = df.rename(columns=rename_map)
@@ -38,6 +65,8 @@ def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
             df["driver_id"] = df["claim_number"].fillna("").astype(str)
         else:
             df["driver_id"] = ""
+
+    df = _add_lag_metrics(df)
 
     expected_cols = [
         "company_name",
@@ -116,8 +145,6 @@ def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = ""
 
-    df = _add_lag_metrics(df)
-
     return df
 
 
@@ -165,6 +192,12 @@ def show_claims():
     if claims_df.empty:
         st.info("No claims loaded yet.")
         return
+
+    with st.expander("Debug date fields"):
+        debug_cols = [c for c in claims_df.columns if "date" in c.lower() or c in ["lag_days", "claim_date", "date_reported_to_wc"]]
+        st.write(debug_cols)
+        if debug_cols:
+            st.dataframe(claims_df[debug_cols], use_container_width=True, hide_index=True)
 
     st.subheader("Claims Preview")
     st.dataframe(claims_df, use_container_width=True, hide_index=True)
