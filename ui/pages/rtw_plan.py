@@ -410,7 +410,7 @@ def _render_adjuster_section(workflow_df: pd.DataFrame, company_name: str, claim
             "completed": "Completed",
         }
     )
-    st.dataframe(timeline_df, width="stretch", hide_index=True)
+    st.dataframe(timeline_df, use_container_width=True, hide_index=True)
 
 def _normalize_rtw_df(df: pd.DataFrame, company_name: str) -> pd.DataFrame:
     if df.empty:
