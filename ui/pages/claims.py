@@ -7,14 +7,14 @@ from io_layer.google_company_store import load_company_rows_from_shared_tab
 CLAIMS_TAB_NAME = "claims"
 
 
-def _first_existing_column(df: pd.DataFrame, candidates: list[str]) -> str | None:
+def _first_existing_column(df, candidates):
     for col in candidates:
         if col in df.columns:
             return col
     return None
 
 
-def _add_lag_metrics(df: pd.DataFrame) -> pd.DataFrame:
+def _add_lag_metrics(df):
     df = df.copy()
 
     claim_date_col = _first_existing_column(df, [
@@ -48,7 +48,7 @@ def _add_lag_metrics(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
+def _prepare_claims_df(df):
     df = clean_column_names(df)
     df = strip_whitespace(df)
     df = drop_exact_duplicates(df)
@@ -176,28 +176,22 @@ def show_claims():
                 st.session_state["claims_raw_df"] = pd.DataFrame()
                 st.session_state["claims_cleaned_df"] = pd.DataFrame()
                 st.session_state["claims_last_company"] = company_name
-                st.warning(f"No claims found in Google Sheets tab '{CLAIMS_TAB_NAME}' for {company_name}.")
+                st.warning("No claims found in Google Sheets.")
             else:
                 cleaned_df = _prepare_claims_df(df)
                 st.session_state["claims_raw_df"] = df
                 st.session_state["claims_cleaned_df"] = cleaned_df
                 st.session_state["claims_last_company"] = company_name
-                st.success(f"Loaded {len(cleaned_df)} claims from Google Sheets.")
+                st.success("Loaded {} claims from Google Sheets.".format(len(cleaned_df)))
 
         except Exception as e:
-            st.error(f"Google Sheets load error: {e}")
+            st.error("Google Sheets load error: {}".format(e))
 
     claims_df = st.session_state.get("claims_cleaned_df", pd.DataFrame())
 
     if claims_df.empty:
         st.info("No claims loaded yet.")
         return
-
-    with st.expander("Debug date fields"):
-        debug_cols = [c for c in claims_df.columns if "date" in c.lower() or c in ["lag_days", "claim_date", "date_reported_to_wc"]]
-        st.write(debug_cols)
-        if debug_cols:
-            st.dataframe(claims_df[debug_cols], use_container_width=True, hide_index=True)
 
     st.subheader("Claims Preview")
     st.dataframe(claims_df, use_container_width=True, hide_index=True)
