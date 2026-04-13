@@ -103,6 +103,13 @@ def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
         if col not in df.columns:
             df[col] = ""
 
+    # Build lag_days from claim_date and date_reported_to_wc
+    if "claim_date" in df.columns and "date_reported_to_wc" in df.columns:
+        claim_dates = pd.to_datetime(df["claim_date"], errors="coerce")
+        reported_dates = pd.to_datetime(df["date_reported_to_wc"], errors="coerce")
+        df["lag_days"] = (reported_dates - claim_dates).dt.days
+        df.loc[df["lag_days"] < 0, "lag_days"] = pd.NA
+
     return df
 
 
