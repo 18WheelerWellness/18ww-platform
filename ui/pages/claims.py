@@ -7,6 +7,19 @@ from io_layer.google_company_store import load_company_rows_from_shared_tab
 CLAIMS_TAB_NAME = "claims"
 
 
+def _add_lag_metrics(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+
+    if "claim_date" in df.columns and "date_reported_to_wc" in df.columns:
+        claim_dates = pd.to_datetime(df["claim_date"], errors="coerce")
+        reported_dates = pd.to_datetime(df["date_reported_to_wc"], errors="coerce")
+
+        df["lag_days"] = (reported_dates - claim_dates).dt.days
+        df.loc[pd.to_numeric(df["lag_days"], errors="coerce") < 0, "lag_days"] = pd.NA
+
+    return df
+
+
 def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
     df = clean_column_names(df)
     df = strip_whitespace(df)
@@ -102,6 +115,8 @@ def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
     for col in expected_cols:
         if col not in df.columns:
             df[col] = ""
+
+    df = _add_lag_metrics(df)
 
     return df
 
