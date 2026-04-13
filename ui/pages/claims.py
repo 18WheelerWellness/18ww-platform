@@ -7,53 +7,13 @@ from io_layer.google_company_store import load_company_rows_from_shared_tab
 CLAIMS_TAB_NAME = "claims"
 
 
-def _first_existing_column(df, candidates):
-    for col in candidates:
-        if col in df.columns:
-            return col
-    return None
-
-
-def _add_lag_metrics(df):
-    df = df.copy()
-
-    claim_date_col = _first_existing_column(df, [
-        "claim_date",
-        "date_of_injury",
-        "injury_date",
-        "doi",
-    ])
-
-    reported_date_col = _first_existing_column(df, [
-        "date_reported_to_wc",
-        "date_reported",
-        "reported_date",
-        "wc_report_date",
-        "date_reported_to_carrier",
-    ])
-
-    if claim_date_col:
-        df["claim_date"] = df[claim_date_col]
-
-    if reported_date_col:
-        df["date_reported_to_wc"] = df[reported_date_col]
-
-    if "claim_date" in df.columns and "date_reported_to_wc" in df.columns:
-        claim_dates = pd.to_datetime(df["claim_date"], errors="coerce")
-        reported_dates = pd.to_datetime(df["date_reported_to_wc"], errors="coerce")
-
-        df["lag_days"] = (reported_dates - claim_dates).dt.days
-        df.loc[pd.to_numeric(df["lag_days"], errors="coerce") < 0, "lag_days"] = pd.NA
-
-    return df
-
-
-def _prepare_claims_df(df):
+def _prepare_claims_df(df: pd.DataFrame) -> pd.DataFrame:
     df = clean_column_names(df)
     df = strip_whitespace(df)
     df = drop_exact_duplicates(df)
 
     rename_map = {
+        "date_of_injury": "claim_date",
         "injury_area": "body_part",
     }
     df = df.rename(columns=rename_map)
@@ -65,8 +25,6 @@ def _prepare_claims_df(df):
             df["driver_id"] = df["claim_number"].fillna("").astype(str)
         else:
             df["driver_id"] = ""
-
-    df = _add_lag_metrics(df)
 
     expected_cols = [
         "company_name",
@@ -176,16 +134,16 @@ def show_claims():
                 st.session_state["claims_raw_df"] = pd.DataFrame()
                 st.session_state["claims_cleaned_df"] = pd.DataFrame()
                 st.session_state["claims_last_company"] = company_name
-                st.warning("No claims found in Google Sheets.")
+                st.warning(f"No claims found in Google Sheets tab '{CLAIMS_TAB_NAME}' for {company_name}.")
             else:
                 cleaned_df = _prepare_claims_df(df)
                 st.session_state["claims_raw_df"] = df
                 st.session_state["claims_cleaned_df"] = cleaned_df
                 st.session_state["claims_last_company"] = company_name
-                st.success("Loaded {} claims from Google Sheets.".format(len(cleaned_df)))
+                st.success(f"Loaded {len(cleaned_df)} claims from Google Sheets.")
 
         except Exception as e:
-            st.error("Google Sheets load error: {}".format(e))
+            st.error(f"Google Sheets load error: {e}")
 
     claims_df = st.session_state.get("claims_cleaned_df", pd.DataFrame())
 
