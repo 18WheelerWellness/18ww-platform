@@ -1086,21 +1086,25 @@ def login_screen():
 
 
 def require_login():
-    # -----------------------------
-# DEMO SAMPLE DATA
+    # your login logic here
+    pass
+    
+# -----------------------------
+# DEMO SAMPLE DATA (CORRECT SPOT)
 # -----------------------------
 if "demo_loaded" not in st.session_state:
     st.session_state["demo_loaded"] = True
 
     import pandas as pd
 
-    # Drivers
     st.session_state["driver_cleaned_df"] = pd.DataFrame([
         {"company_name": "JakeTrucking", "driver_name": "John Smith"},
         {"company_name": "JakeTrucking", "driver_name": "Mike Johnson"},
         {"company_name": "JakeTrucking", "driver_name": "Chris Lee"},
         {"company_name": "JakeTrucking", "driver_name": "David Brown"},
-    ])
+    ]) 
+
+    require_login()
 
     # Claims
     st.session_state["claims_cleaned_df"] = pd.DataFrame([
