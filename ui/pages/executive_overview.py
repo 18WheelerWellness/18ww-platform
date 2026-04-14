@@ -74,3 +74,78 @@ def render_executive_overview():
         )
 
     with o2:
+
+                st.metric(
+            "Average Lag Time",
+            f"{avg_lag:.1f}" if avg_lag is not None else "N/A"
+        )
+
+    with o3:
+        st.metric(
+            "Employees Out",
+            f"{employees_out}" if employees_out is not None else "N/A"
+        )
+
+    st.markdown("---")
+
+    # -----------------------------
+    # EXECUTIVE SUMMARY
+    # -----------------------------
+    st.subheader("Executive Summary")
+
+    st.markdown(f"""
+- **Current pressure:** ${total_pressure:,.0f}  
+- **Recoverable savings:** ${total_relief:,.0f}  
+- **Total opportunity:** ${master_opportunity:,.0f}  
+
+👉 The biggest drivers are **lag time and delayed return-to-work**  
+👉 Improving RTW speed directly reduces **claim cost and premium impact**
+""")
+
+    # -----------------------------
+    # SIGNAL (CLOSE)
+    # -----------------------------
+    if total_pressure > total_relief:
+        st.error("⚠️ Current system is losing more than it’s recovering.")
+    elif total_pressure > 0:
+        st.warning("⚠️ System is improving but still has financial drag.")
+    else:
+        st.success("✅ System appears controlled.")
+
+    st.markdown("---")
+
+    # -----------------------------
+    # SIMPLE PDF EXPORT (SAFE)
+    # -----------------------------
+    st.subheader("Export")
+
+    def simple_pdf():
+        try:
+            from reportlab.lib.pagesizes import letter
+            from reportlab.platypus import SimpleDocTemplate, Paragraph
+            from reportlab.lib.styles import getSampleStyleSheet
+        except ImportError:
+            return None
+
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+
+        story = []
+        story.append(Paragraph(f"Executive Overview - {company_label}", styles["Title"]))
+        story.append(Paragraph(f"Total Opportunity: ${master_opportunity:,.0f}", styles["Heading2"]))
+        story.append(Paragraph(f"Total Pressure: ${total_pressure:,.0f}", styles["Normal"]))
+        story.append(Paragraph(f"Recoverable Savings: ${total_relief:,.0f}", styles["Normal"]))
+
+        doc.build(story)
+        return buffer.getvalue()
+
+    pdf_bytes = simple_pdf()
+
+    if pdf_bytes:
+        st.download_button(
+            "Download Executive PDF",
+            data=pdf_bytes,
+            file_name="executive_overview.pdf",
+            mime="application/pdf"
+        )
