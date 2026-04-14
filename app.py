@@ -1110,8 +1110,9 @@ def login_screen():
 
 
 def require_login():
-    # your login logic here
-    pass
+    if not st.session_state.get("logged_in", False):
+        login_screen()
+        st.stop()
     
 # -----------------------------
 # DEMO SAMPLE DATA (CORRECT SPOT)
