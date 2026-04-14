@@ -1303,6 +1303,18 @@ page = st.sidebar.radio(
     key="nav_page_radio",
 )
 
+# -----------------------------
+# DEMO CONTROLS (ADD HERE)
+# -----------------------------
+st.sidebar.markdown("---")
+st.sidebar.subheader("Demo Controls")
+
+fleet_size = st.sidebar.selectbox(
+    "Fleet Size",
+    ["Small (10)", "Medium (50)", "Large (150)"],
+    key="demo_fleet_size"
+)
+
 st.title("18WW Platform")
 
 if page == "Company Overview":
