@@ -1077,7 +1077,7 @@ def login_screen():
 
             if user["role"] == "client":
                 st.session_state["nav_group_select"] = "Operations"
-                st.session_state["nav_page_radio"] = "Drivers"
+                st.session_state["nav_page_radio"] = "Company Overview"
 
             st.success("Login successful")
             st.rerun()
