@@ -2,95 +2,57 @@ import streamlit as st
 import pandas as pd
 
 def show_rtw_plan():
-    st.header("Return-to-Work (RTW)")
+
+    st.title("Return-to-Work (RTW) Impact")
 
     df = st.session_state.get("claims_cleaned_df", pd.DataFrame())
 
     if df.empty:
-        st.warning("No claims available.")
+        st.warning("No claims data available.")
         return
 
-    # -----------------------------
-    # SELECT CLAIM
-    # -----------------------------
-    claim_number = st.selectbox("Select Claim", df["claim_number"])
+    df = df.copy()
 
-    claim = df[df["claim_number"] == claim_number].iloc[0]
+    df["lag_days"] = pd.to_numeric(df["lag_days"], errors="coerce").fillna(0)
+    df["actual_rtw_days"] = pd.to_numeric(df["actual_rtw_days"], errors="coerce").fillna(0)
+    df["cost_per_day"] = pd.to_numeric(df.get("cost_per_day", 250), errors="coerce").fillna(250)
+
+    df["total_cost"] = df["actual_rtw_days"] * df["cost_per_day"]
 
     # -----------------------------
-    # CLAIM SNAPSHOT
+    # SUMMARY
     # -----------------------------
-    st.subheader("Claim Snapshot")
+    total_cost = int(df["total_cost"].sum())
+    avg_rtw = round(df["actual_rtw_days"].mean(), 1)
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Driver", claim.get("driver_name", ""))
-    c2.metric("Lag Days", claim.get("lag_days", 0))
-    c3.metric("RTW Days", claim.get("actual_rtw_days", 0))
+    st.metric("Total Cost", f"${total_cost:,}")
+    st.metric("Avg RTW Days", avg_rtw)
 
     st.markdown("---")
 
     # -----------------------------
-    # RTW ASSIGNMENT
+    # FLAG PROBLEMS
     # -----------------------------
-    st.subheader("RTW Assignment")
+    st.subheader("Claims Driving Cost")
 
-    tier = st.selectbox(
-        "RTW Tier",
-        ["A – Seated", "B – Light Duty", "C – Walk/Stand", "D – Lower Body", "E – Upper Body", "J – No Driving"]
+    df["flag"] = df["actual_rtw_days"].apply(
+        lambda x: "🔴 High Cost" if x > 10 else "🟡 Moderate" if x > 5 else "🟢 Controlled"
     )
 
-    job = st.selectbox(
-        "Temporary Job",
-        ["Safety Review", "Training Support", "Admin Work", "Scheduling", "Custom"]
-    )
-
-    if job == "Custom":
-        job = st.text_input("Enter Custom Job")
-
-    rtw_date = st.text_input("RTW Start Date (Target: 3–5 days)")
+    st.dataframe(df[[
+        "claim_number",
+        "driver_name",
+        "lag_days",
+        "actual_rtw_days",
+        "total_cost",
+        "flag"
+    ]])
 
     st.markdown("---")
 
     # -----------------------------
-    # COST IMPACT (CLOSE SECTION)
+    # VALUE LINE
     # -----------------------------
-    lag = pd.to_numeric(claim.get("lag_days", 0), errors="coerce")
-    rtw_days = pd.to_numeric(claim.get("actual_rtw_days", 0), errors="coerce")
-    cost_per_day = pd.to_numeric(claim.get("cost_per_day", 0), errors="coerce")
-
-    if pd.notna(rtw_days) and pd.notna(cost_per_day):
-
-        # CURRENT (what they’re doing now)
-        current_cost = rtw_days * cost_per_day
-
-        # IMPROVED (your system)
-        improved_days = 5
-        improved_cost = improved_days * cost_per_day
-
-        savings = current_cost - improved_cost
-
-        st.subheader("Cost Impact")
-
-        col1, col2 = st.columns(2)
-
-        # LEFT = FUTURE (GOOD)
-        col1.metric(
-            "With RTW System",
-            f"${int(improved_cost):,}",
-            f"-${int(savings):,} vs current"
-        )
-
-        # RIGHT = CURRENT (PAIN)
-        col2.metric(
-            "Current Cost",
-            f"${int(current_cost):,}"
-        )
-
-        st.success(f"Estimated Savings: ${int(savings):,}")
-        st.success("Reducing time out of work directly reduces claim cost.")
-
-    # -----------------------------
-    # SAVE BUTTON
-    # -----------------------------
-    if st.button("Save RTW Plan"):
-        st.success("RTW plan saved.")
+    st.markdown(
+        "Each additional day out of work increases claim cost. Reducing RTW time directly lowers total spend."
+    )
