@@ -3,6 +3,46 @@ from io_layer.session_store import load_session_data
 import os
 import json
 import pandas as pd
+import random
+
+def generate_demo_data(fleet_size):
+
+    if fleet_size == "Small (10)":
+        num_drivers = 10
+        claim_rate = 0.15
+    elif fleet_size == "Medium (50)":
+        num_drivers = 50
+        claim_rate = 0.20
+    else:
+        num_drivers = 150
+        claim_rate = 0.25
+
+    drivers = []
+    claims = []
+
+    for i in range(num_drivers):
+        name = f"Driver {i+1}"
+
+        drivers.append({
+            "company_name": "JakeTrucking",
+            "driver_name": name
+        })
+
+        if random.random() < claim_rate:
+            lag = random.randint(2, 7)
+            rtw = random.randint(10, 25)
+
+            claims.append({
+                "company_name": "JakeTrucking",
+                "claim_number": f"C{i+1000}",
+                "driver_name": name,
+                "lag_days": lag,
+                "actual_rtw_days": rtw,
+                "cost_per_day": 250,
+                "current_status": "Open"
+            })
+
+    return pd.DataFrame(drivers), pd.DataFrame(claims)
 
 import math
 try:
