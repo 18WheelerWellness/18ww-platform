@@ -23,14 +23,14 @@ def show_rtw_plan():
     st.subheader("Claim Snapshot")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Driver", claim["driver_name"])
-    c2.metric("Lag Days", claim["lag_days"])
-    c3.metric("RTW Days", claim["actual_rtw_days"])
+    c1.metric("Driver", claim.get("driver_name", ""))
+    c2.metric("Lag Days", claim.get("lag_days", 0))
+    c3.metric("RTW Days", claim.get("actual_rtw_days", 0))
 
     st.markdown("---")
 
     # -----------------------------
-    # RTW PROCESS
+    # RTW ASSIGNMENT
     # -----------------------------
     st.subheader("RTW Assignment")
 
@@ -52,44 +52,5 @@ def show_rtw_plan():
     st.markdown("---")
 
     # -----------------------------
-    # COST IMPACT (CLOSE DRIVER)
-    # -----------------------------
-    lag = pd.to_numeric(claim.get("lag_days", 0), errors="coerce")
-    cost_per_day = pd.to_numeric(claim.get("cost_per_day", 0), errors="coerce")
-
-    if pd.notna(rtw_days) and pd.notna(cost_per_day):
-
-        # CURRENT = what they are doing now
-        current_cost = rtw_days * cost_per_day
-
-        # IMPROVED = your system
-        improved_days = 5
-        improved_cost = improved_days * cost_per_day
-
-        savings = current_cost - improved_cost
-
-        st.subheader("Cost Impact")
-
-        col1, col2 = st.columns(2)
-
-        # LEFT = GOOD (future)
-        col1.metric(
-        "With RTW System",
-        f"${int(improved_cost):,}",
-        f"-{int(savings):,} vs current"
-        )
-
-        # RIGHT = CURRENT (pain)
-        col2.metric(
-            "Current Cost",
-            f"${int(current_cost):,}"
-        )
-
-        st.success(f"Estimated Savings: ${int(savings):,}")
-        st.success("Reducing time out of work directly reduces claim cost.")
-
-    # -----------------------------
-    # SAVE
-    # -----------------------------
-        if st.button("Save RTW Plan"):
-            st.success("RTW plan saved.")
+    # COST IMPACT (CLOSE SECTION)
+    # ----------------
