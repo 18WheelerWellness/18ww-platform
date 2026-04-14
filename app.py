@@ -23,10 +23,12 @@ def generate_demo_data(fleet_size):
     for i in range(num_drivers):
         name = f"Driver {i+1}"
 
+        company_name = st.session_state.get("company_name", "Demo Company")
+
         drivers.append({
-            "company_name": "company_name",
+            "company_name": company_name,
             "driver_name": name
-        })
+    })
 
         if random.random() < claim_rate:
             lag = random.randint(2, 7)
