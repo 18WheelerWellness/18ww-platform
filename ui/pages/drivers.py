@@ -1,4 +1,4 @@
-import streamlit as st
+ximport streamlit as st
 import pandas as pd
 
 DRIVER_COLUMNS = [
@@ -60,8 +60,15 @@ def show_drivers():
     # -----------------------------
     # LOAD DATA
     # -----------------------------
-    if "driver_cleaned_df" not in st.session_state:
-        st.session_state["driver_cleaned_df"] = _blank_drivers_df(company_name)
+    # -----------------------------
+    # LOAD DATA (DEMO FIRST)
+    # -----------------------------
+    df = st.session_state.get("driver_cleaned_df")
+
+    if df is None or df.empty:
+        df = _blank_drivers_df(company_name)
+
+    st.session_state["driver_cleaned_df"] = df
 
     full_df = _ensure_row_id(st.session_state["driver_cleaned_df"])
     editor_df = _build_editor_df(full_df, company_name)
