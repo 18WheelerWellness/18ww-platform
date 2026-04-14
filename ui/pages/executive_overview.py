@@ -1,150 +1,79 @@
 import streamlit as st
-from io import BytesIO
-
+import pandas as pd
 
 def render_executive_overview():
-    st.header("Executive Overview")
+
+    st.title("Executive Overview")
+
+    df = st.session_state.get("claims_cleaned_df", pd.DataFrame())
+
+    if df.empty:
+        st.warning("No claims data available.")
+        return
+
+    df = df.copy()
+
+    df["lag_days"] = pd.to_numeric(df["lag_days"], errors="coerce").fillna(0)
+    df["actual_rtw_days"] = pd.to_numeric(df["actual_rtw_days"], errors="coerce").fillna(0)
+    df["cost_per_day"] = pd.to_numeric(df.get("cost_per_day", 250), errors="coerce").fillna(250)
+
+    df["total_cost"] = df["actual_rtw_days"] * df["cost_per_day"]
+
+    total_cost = int(df["total_cost"].sum())
+    avg_lag = round(df["lag_days"].mean(), 1)
+    avg_rtw = round(df["actual_rtw_days"].mean(), 1)
+
+    # 🎯 TARGETS
+    target_rtw = 5
+    target_lag = 1
+
+    improved_cost = int((df["cost_per_day"] * target_rtw).sum())
+    savings = total_cost - improved_cost
+    improvement_pct = round((savings / total_cost) * 100, 1) if total_cost > 0 else 0
 
     # -----------------------------
-    # LOAD DATA FROM SESSION
+    # TOP METRICS
     # -----------------------------
-    company_label = st.session_state.get("company_name", "JakeTrucking")
+    st.subheader("Current vs Target")
 
-    avoidable_premium = float(st.session_state.get("exec_wc_avoidable_premium", 45000))
-    financial_drag = float(st.session_state.get("exec_rtw_fi_financial_drag", 30000))
-    savings_to_date = float(st.session_state.get("exec_wc_savings_to_date", 10000))
+    c1, c2, c3 = st.columns(3)
 
-    rtw_ratio = st.session_state.get("exec_rtw_fi_rtw_ratio", 35.0)
-    avg_lag = st.session_state.get("exec_avg_lag_days", 4.0)
-    employees_out = st.session_state.get("exec_employees_out", 3)
-
-    total_pressure = avoidable_premium + financial_drag
-    total_relief = savings_to_date
-    master_opportunity = total_pressure + total_relief
-
-    # -----------------------------
-    # HEADLINE (THIS CLOSES)
-    # -----------------------------
-    st.markdown("### Total Financial Opportunity")
-
-    st.metric(
-        "Total Opportunity",
-        f"${master_opportunity:,.0f}"
-    )
-
-    st.markdown("**This combines workers' comp pressure and recoverable savings.**")
+    c1.metric("Avg Lag Days", avg_lag, f"{avg_lag - target_lag:+}")
+    c2.metric("Avg RTW Days", avg_rtw, f"{avg_rtw - target_rtw:+}")
+    c3.metric("Total Cost", f"${total_cost:,}")
 
     st.markdown("---")
 
     # -----------------------------
-    # PRESSURE (PROBLEM)
+    # DECISION BLOCK
     # -----------------------------
-    st.subheader("Current Financial Pressure")
+    st.subheader("Financial Opportunity")
 
-    p1, p2 = st.columns(2)
+    o1, o2 = st.columns(2)
 
-    with p1:
-        st.metric("Avoidable Premium", f"${avoidable_premium:,.0f}")
+    o1.metric("Current Cost", f"${total_cost:,}")
+    o2.metric("With RTW System", f"${improved_cost:,}")
 
-    with p2:
-        st.metric("RTW Financial Drag", f"${financial_drag:,.0f}")
-
-    st.markdown("---")
-
-    # -----------------------------
-    # RELIEF (SOLUTION)
-    # -----------------------------
-    st.subheader("Recoverable Savings")
-
-    st.metric("Savings to Date", f"${total_relief:,.0f}")
-
-    st.markdown("---")
-
-    # -----------------------------
-    # OPERATIONS (WHY THIS IS HAPPENING)
-    # -----------------------------
-    st.subheader("Operational Drivers")
-
-    o1, o2, o3 = st.columns(3)
-
-    with o1:
-        st.metric(
-            "RTW Ratio (0–4 Days)",
-            f"{rtw_ratio:.1f}%"
-        )
-
-    with o2:
-        st.metric(
-            "Average Lag Time",
-            f"{avg_lag:.1f}"
-        )
-
-    with o3:
-        st.metric(
-            "Employees Out",
-            f"{employees_out}"
-        )
-
-    st.markdown("---")
-
-    # -----------------------------
-    # EXECUTIVE SUMMARY (CLOSE)
-    # -----------------------------
-    st.subheader("Executive Summary")
-
-    st.markdown(f"""
-- **Current pressure:** ${total_pressure:,.0f}  
-- **Recoverable savings:** ${total_relief:,.0f}  
-- **Total opportunity:** ${master_opportunity:,.0f}  
-
-👉 The biggest drivers are **lag time and delayed return-to-work**  
-👉 Improving RTW speed directly reduces **claim cost and premium impact**
-""")
-
-    # -----------------------------
-    # SIGNAL (FINAL CLOSE)
-    # -----------------------------
-    if total_pressure > total_relief:
-        st.error("⚠️ Current system is losing more than it’s recovering.")
-    elif total_pressure > 0:
-        st.warning("⚠️ System is improving but still has financial drag.")
+    if savings > 0:
+        st.success(f"💰 Estimated Savings: ${savings:,} ({improvement_pct}%)")
     else:
-        st.success("✅ System appears controlled.")
+        st.warning("No savings opportunity detected")
 
     st.markdown("---")
 
     # -----------------------------
-    # SIMPLE PDF EXPORT
+    # VISUAL (SIMPLE BAR)
     # -----------------------------
-    st.subheader("Export")
+    chart_df = pd.DataFrame({
+        "Scenario": ["Current", "Optimized"],
+        "Cost": [total_cost, improved_cost]
+    })
 
-    def simple_pdf():
-        try:
-            from reportlab.lib.pagesizes import letter
-            from reportlab.platypus import SimpleDocTemplate, Paragraph
-            from reportlab.lib.styles import getSampleStyleSheet
-        except ImportError:
-            return None
+    st.bar_chart(chart_df.set_index("Scenario"))
 
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter)
-        styles = getSampleStyleSheet()
-
-        story = []
-        story.append(Paragraph(f"Executive Overview - {company_label}", styles["Title"]))
-        story.append(Paragraph(f"Total Opportunity: ${master_opportunity:,.0f}", styles["Heading2"]))
-        story.append(Paragraph(f"Total Pressure: ${total_pressure:,.0f}", styles["Normal"]))
-        story.append(Paragraph(f"Recoverable Savings: ${total_relief:,.0f}", styles["Normal"]))
-
-        doc.build(story)
-        return buffer.getvalue()
-
-    pdf_bytes = simple_pdf()
-
-    if pdf_bytes:
-        st.download_button(
-            "Download Executive PDF",
-            data=pdf_bytes,
-            file_name="executive_overview.pdf",
-            mime="application/pdf"
-        )
+    # -----------------------------
+    # CLOSE LINE
+    # -----------------------------
+    st.markdown(
+        "Reducing lag time and return-to-work delays directly lowers claim costs and premium exposure."
+    )
