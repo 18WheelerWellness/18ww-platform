@@ -966,29 +966,11 @@ NAV_GROUPS = {
         "Company Overview",
         "Drivers",
         "Claims",
-        "FMS / Static Screen",
-        "Accident Steps / RTW Workflow",
         "RTW",
-        "ROM/MMI",
-        "Reports",
+
     ],
     "Executive": [
         "Executive Overview",
-        "Executive Business Impact",
-        "Executive RTW Dashboard",
-        "Executive FMS Dashboard",
-        "Executive WC Financial Impact",
-        "Executive ROM/MMI",
-    ],
-    "Savings & Analytics": [
-        "Savings",
-        "Savings to Date",
-        "Cost per FTE",
-        "Sales to Pay for Accident",
-        "Lag Time",
-        "RTW Ratio",
-        "Employees Out of Work",
-        "Saving ROM/MMI",
     ],
 }
 
