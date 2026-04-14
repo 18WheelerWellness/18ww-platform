@@ -1114,7 +1114,38 @@ def require_login():
 # -----------------------------
 # DEMO SAMPLE DATA (CORRECT SPOT)
 # -----------------------------
-if "demo_loaded" not in st.session_state:
+# -----------------------------
+# DEMO LOADER (FLEET-BASED)
+# -----------------------------
+fleet_size = st.session_state.get("demo_fleet_size", "Medium (50)")
+
+if (
+    "demo_loaded" not in st.session_state
+    or st.session_state.get("last_fleet") != fleet_size
+):
+
+    drivers_df, claims_df = generate_demo_data(fleet_size)
+
+    st.session_state["driver_cleaned_df"] = drivers_df
+    st.session_state["claims_cleaned_df"] = claims_df
+
+    # EXECUTIVE CALCS
+    total_claim_cost = len(claims_df) * 5000
+    savings = int(total_claim_cost * 0.25)
+
+    st.session_state["exec_wc_avoidable_premium"] = total_claim_cost
+    st.session_state["exec_rtw_fi_financial_drag"] = int(total_claim_cost * 0.6)
+    st.session_state["exec_wc_savings_to_date"] = savings
+    st.session_state["exec_rtw_fi_rtw_ratio"] = 35.0
+
+    st.session_state["exec_avg_lag_days"] = (
+        claims_df["lag_days"].mean() if not claims_df.empty else 0
+    )
+
+    st.session_state["exec_employees_out"] = len(claims_df)
+
+    st.session_state["last_fleet"] = fleet_size
+    st.session_state["demo_loaded"] = True
     st.session_state["demo_loaded"] = True
 
     import pandas as pd
