@@ -24,7 +24,7 @@ def generate_demo_data(fleet_size):
         name = f"Driver {i+1}"
 
         drivers.append({
-            "company_name": "JakeTrucking",
+            "company_name": "company_name",
             "driver_name": name
         })
 
@@ -33,7 +33,7 @@ def generate_demo_data(fleet_size):
             rtw = random.randint(10, 25)
 
             claims.append({
-                "company_name": "JakeTrucking",
+                "company_name": "company_name",
                 "claim_number": f"C{i+1000}",
                 "driver_name": name,
                 "lag_days": lag,
@@ -1276,7 +1276,7 @@ username = st.session_state.get("username", "Demo User")
 st.sidebar.markdown(f"**User:** {username}")
 
 role = st.session_state.get("role", "admin")
-company = st.session_state.get("company_name", "JakeTrucking")
+company = st.session_state.get("company_name", "company_name")
 
 if role == "admin":
     st.sidebar.markdown(f"**Viewing:** {company}")
