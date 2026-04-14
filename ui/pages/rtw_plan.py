@@ -107,4 +107,4 @@ def show_rtw_plan():
     # COST IMPACT (THIS CLOSES)
     # -----------------------------
     lag_days = pd.to_numeric(claim_row.get("lag_days", 0), errors="coerce")
-    cost_per_day = pd.to_numeric(claim_row
+    cost_per_day = pd.to_numeric(claim_row)
