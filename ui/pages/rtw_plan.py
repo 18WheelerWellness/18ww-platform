@@ -57,20 +57,39 @@ def show_rtw_plan():
     lag = pd.to_numeric(claim.get("lag_days", 0), errors="coerce")
     cost_per_day = pd.to_numeric(claim.get("cost_per_day", 0), errors="coerce")
 
-    if pd.notna(lag) and pd.notna(cost_per_day):
-        current_cost = lag * cost_per_day
-        improved_cost = 5 * cost_per_day  # assume 5 day RTW
+    if pd.notna(rtw_days) and pd.notna(cost_per_day):
+
+        # CURRENT = what they are doing now
+        current_cost = rtw_days * cost_per_day
+
+        # IMPROVED = your system
+        improved_days = 5
+        improved_cost = improved_days * cost_per_day
+
+        savings = current_cost - improved_cost
 
         st.subheader("Cost Impact")
 
         col1, col2 = st.columns(2)
-        col1.metric("Current Cost", f"${int(current_cost):,}")
-        col2.metric("With RTW System", f"${int(improved_cost):,}")
 
+        # LEFT = GOOD (future)
+        col1.metric(
+        "With RTW System",
+        f"${int(improved_cost):,}",
+        f"-{int(savings):,} vs current"
+        )
+
+        # RIGHT = CURRENT (pain)
+        col2.metric(
+            "Current Cost",
+            f"${int(current_cost):,}"
+        )
+
+        st.success(f"Estimated Savings: ${int(savings):,}")
         st.success("Reducing time out of work directly reduces claim cost.")
 
     # -----------------------------
     # SAVE
     # -----------------------------
-    if st.button("Save RTW Plan"):
-        st.success("RTW plan saved.")
+        if st.button("Save RTW Plan"):
+            st.success("RTW plan saved.")
