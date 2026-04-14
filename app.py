@@ -1295,13 +1295,17 @@ if "saved_state_autoload_attempted" not in st.session_state:
         st.session_state["saved_state_load_error"] = str(e)
         st.session_state["saved_state_loaded_keys"] = []
     st.session_state["saved_state_autoload_attempted"] = True
+    
+username = st.session_state.get("username", "Demo User")
+st.sidebar.markdown(f"**User:** {username}")
 
-st.sidebar.markdown(f"**User:** {st.session_state['username']}")
-st.sidebar.markdown(f"**Role:** {st.session_state['role']}")
-if st.session_state["role"] == "admin":
-    st.sidebar.markdown(f"**Viewing:** {st.session_state['company_name']}")
+role = st.session_state.get("role", "admin")
+company = st.session_state.get("company_name", "JakeTrucking")
+
+if role == "admin":
+    st.sidebar.markdown(f"**Viewing:** {company}")
 else:
-    st.sidebar.markdown(f"**Company:** {st.session_state['company_name']}")
+    st.sidebar.markdown(f"**Company:** {company}")
 
 render_admin_switcher()
 render_user_admin_panel()
