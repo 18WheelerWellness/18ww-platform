@@ -35,7 +35,7 @@ def generate_demo_data(fleet_size):
             rtw = random.randint(10, 25)
 
             claims.append({
-                "company_name": "company_name",
+                "company_name": company_name,
                 "claim_number": f"C{i+1000}",
                 "driver_name": name,
                 "lag_days": lag,
