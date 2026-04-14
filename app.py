@@ -1,9 +1,12 @@
 import streamlit as st
 import pandas as pd
 import random
-import os
 import json
+import os
 
+# -----------------------------
+# IMPORT YOUR REAL PAGES
+# -----------------------------
 from ui.pages.drivers import show_drivers
 from ui.pages.claims import show_claims
 from ui.pages.rtw_plan import show_rtw_plan
@@ -22,7 +25,7 @@ DEFAULT_USERS = {
 def ensure_users_file():
     if not os.path.exists(USERS_FILE):
         with open(USERS_FILE, "w") as f:
-            json.dump(DEFAULT_USERS, f, indent=2)
+            json.dump(DEFAULT_USERS, f)
 
 def load_users():
     ensure_users_file()
@@ -48,7 +51,6 @@ def login_screen():
             st.session_state["username"] = username
             st.session_state["role"] = user["role"]
 
-            # 🔥 KEY LOGIC
             if demo_company:
                 st.session_state["company_name"] = demo_company
             else:
@@ -68,18 +70,17 @@ def require_login():
 # DEMO DATA
 # -----------------------------
 def generate_demo_data(fleet_size):
-
     if fleet_size == "Small":
         num = 10
         rate = 0.15
     elif fleet_size == "Medium":
         num = 50
-        rate = 0.20
+        rate = 0.2
     else:
         num = 150
         rate = 0.25
 
-    company = st.session_state.get("company_name", "Demo Company")
+    company = st.session_state.get("company_name")
 
     drivers = []
     claims = []
@@ -97,29 +98,24 @@ def generate_demo_data(fleet_size):
                 "company_name": company,
                 "claim_number": f"C{i+1000}",
                 "driver_name": name,
-                "lag_days": random.randint(2,7),
-                "rtw_days": random.randint(10,25)
+                "lag_days": random.randint(2, 7),
+                "actual_rtw_days": random.randint(10, 25),
+                "cost_per_day": 250,
+                "current_status": "Open"
             })
 
     return pd.DataFrame(drivers), pd.DataFrame(claims)
 
 # -----------------------------
-# UI PAGES
+# COMPANY OVERVIEW
 # -----------------------------
 def show_company_overview():
-    company = st.session_state.get("company_name", "Demo Company")
+    company = st.session_state.get("company_name")
     drivers = st.session_state.get("drivers_df", pd.DataFrame())
     claims = st.session_state.get("claims_df", pd.DataFrame())
 
     st.title(company)
-
     st.subheader(f"{len(drivers)} Drivers | {len(claims)} Claims")
-
-def show_drivers():
-    st.dataframe(st.session_state.get("drivers_df"))
-
-def show_claims():
-    st.dataframe(st.session_state.get("claims_df"))
 
 # -----------------------------
 # APP START
@@ -139,17 +135,24 @@ if st.sidebar.button("Log Out"):
     st.session_state.clear()
     st.rerun()
 
+st.sidebar.markdown("---")
+
 # -----------------------------
-# DEMO CONTROLS
+# FLEET SIZE
 # -----------------------------
 fleet_size = st.sidebar.selectbox(
     "Fleet Size",
-    ["Small", "Medium", "Large"]
+    ["Small", "Medium", "Large"],
+    key="fleet_size_select"
 )
 
+# -----------------------------
+# PAGE NAV (ONLY ONE!)
+# -----------------------------
 page = st.sidebar.radio(
     "Page",
-    ["Overview", "Drivers", "Claims"]
+    ["Overview", "Drivers", "Claims", "RTW", "Executive"],
+    key="page_select"
 )
 
 # -----------------------------
@@ -166,21 +169,28 @@ if (
     st.session_state["drivers_df"] = drivers
     st.session_state["claims_df"] = claims
 
+    # 🔥 bridge to old pages
+    st.session_state["driver_cleaned_df"] = drivers
+    st.session_state["claims_cleaned_df"] = claims
+
     st.session_state["last_fleet"] = fleet_size
     st.session_state["last_company"] = st.session_state.get("company_name")
     st.session_state["demo_loaded"] = True
-
-# -----------------------------
-# NAV
-# -----------------------------
-page = st.sidebar.radio("Page", ["Overview", "Drivers", "Claims"])
 
 # -----------------------------
 # ROUTING
 # -----------------------------
 if page == "Overview":
     show_company_overview()
+
 elif page == "Drivers":
     show_drivers()
+
 elif page == "Claims":
     show_claims()
+
+elif page == "RTW":
+    show_rtw_plan()
+
+elif page == "Executive":
+    render_executive_overview()
