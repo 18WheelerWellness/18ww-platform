@@ -147,12 +147,29 @@ fleet_size = st.sidebar.selectbox(
 )
 
 # -----------------------------
-# PAGE NAV (ONLY ONE!)
+# NAV GROUPS (DROPDOWN SYSTEM)
+# -----------------------------
+nav_groups = {
+    "Operations": ["Overview", "Drivers", "Claims", "RTW"],
+    "Executive": ["Executive Overview"]
+}
+
+# -----------------------------
+# SELECT SECTION
+# -----------------------------
+selected_group = st.sidebar.selectbox(
+    "Section",
+    list(nav_groups.keys()),
+    key="nav_group_select"
+)
+
+# -----------------------------
+# PAGE SELECTOR
 # -----------------------------
 page = st.sidebar.radio(
-    "Page",
-    ["Overview", "Drivers", "Claims", "RTW", "Executive"],
-    key="page_select"
+    "Go to",
+    nav_groups[selected_group],
+    key="nav_page_select"
 )
 
 # -----------------------------
@@ -169,7 +186,7 @@ if (
     st.session_state["drivers_df"] = drivers
     st.session_state["claims_df"] = claims
 
-    # 🔥 bridge to old pages
+    # bridge to existing pages
     st.session_state["driver_cleaned_df"] = drivers
     st.session_state["claims_cleaned_df"] = claims
 
@@ -192,5 +209,5 @@ elif page == "Claims":
 elif page == "RTW":
     show_rtw_plan()
 
-elif page == "Executive":
+elif page == "Executive Overview":
     render_executive_overview()
