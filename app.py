@@ -1282,6 +1282,7 @@ if role == "admin":
     st.sidebar.markdown(f"**Viewing:** {company}")
 else:
     st.sidebar.markdown(f"**Company:** {company}")
+    st.write("SESSION STATE:", st.session_state)
 
 render_admin_switcher()
 render_user_admin_panel()
