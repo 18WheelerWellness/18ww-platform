@@ -1148,58 +1148,6 @@ if (
     st.session_state["demo_loaded"] = True
     st.session_state["demo_loaded"] = True
 
-    import pandas as pd
-
-    st.session_state["driver_cleaned_df"] = pd.DataFrame([
-        {"company_name": "JakeTrucking", "driver_name": "John Smith"},
-        {"company_name": "JakeTrucking", "driver_name": "Mike Johnson"},
-        {"company_name": "JakeTrucking", "driver_name": "Chris Lee"},
-        {"company_name": "JakeTrucking", "driver_name": "David Brown"},
-    ]) 
-
-    require_login()
-
-    # Claims
-    st.session_state["claims_cleaned_df"] = pd.DataFrame([
-        {
-            "company_name": "JakeTrucking",
-            "claim_number": "C1001",
-            "driver_name": "John Smith",
-            "lag_days": 4,
-            "actual_rtw_days": 18,
-            "cost_per_day": 250,
-            "claim_status": "Open",
-            "current_status": "Open"
-        },
-        {
-            "company_name": "JakeTrucking",
-            "claim_number": "C1002",
-            "driver_name": "Mike Johnson",
-            "lag_days": 2,
-            "actual_rtw_days": 12,
-            "cost_per_day": 250,
-            "claim_status": "Open",
-            "current_status": "Open"
-        },
-        {
-            "company_name": "JakeTrucking",
-            "claim_number": "C1003",
-            "driver_name": "Chris Lee",
-            "lag_days": 6,
-            "actual_rtw_days": 22,
-            "cost_per_day": 250,
-            "claim_status": "Open",
-            "current_status": "Open"
-        },
-    ])
-
-    # Executive numbers
-    st.session_state["exec_wc_avoidable_premium"] = 45000
-    st.session_state["exec_rtw_fi_financial_drag"] = 30000
-    st.session_state["exec_wc_savings_to_date"] = 10000
-    st.session_state["exec_rtw_fi_rtw_ratio"] = 35.0
-    st.session_state["exec_avg_lag_days"] = 4.0
-    st.session_state["exec_employees_out"] = 3
     if not st.session_state.get("logged_in", False):
         login_screen()
         st.stop()
