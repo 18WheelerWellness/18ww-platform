@@ -1081,12 +1081,13 @@ def delete_user(username):
     save_users(users)
     return True, f"User '{username}' deleted."
 
-
 def login_screen():
     st.title("18WW Login")
 
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
+
+    demo_company = st.text_input("Company Name (for demo)")
 
     if st.button("Log In"):
         users = load_users()
@@ -1095,13 +1096,15 @@ def login_screen():
         if user and user["password"] == password:
             st.session_state["logged_in"] = True
             st.session_state["username"] = username.strip().lower()
-            st.session_state["base_company_name"] = user["company_name"]
-            st.session_state["company_name"] = user["company_name"]
             st.session_state["role"] = user["role"]
 
-            if user["role"] == "client":
-                st.session_state["nav_group_select"] = "Operations"
-                st.session_state["nav_page_radio"] = "Company Overview"
+            if demo_company:
+                st.session_state["company_name"] = demo_company
+            else:
+                st.session_state["company_name"] = user["company_name"]
+
+            # 🔥 IMPORTANT LINE
+            st.session_state["demo_loaded"] = False
 
             st.success("Login successful")
             st.rerun()
