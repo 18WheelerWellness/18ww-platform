@@ -1151,10 +1151,10 @@ if "demo_loaded" not in st.session_state:
         login_screen()
         st.stop()
     if "demo_loaded" not in st.session_state:
-    st.session_state["demo_loaded"] = True
+        st.session_state["demo_loaded"] = True
 
-    # Drivers
-    st.session_state["driver_cleaned_df"] = pd.DataFrame([
+        # Drivers
+        st.session_state["driver_cleaned_df"] = pd.DataFrame([
         {"driver_name": "John Smith"},
         {"driver_name": "Mike Johnson"},
         {"driver_name": "Chris Lee"},
