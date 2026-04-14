@@ -8,15 +8,15 @@ def render_executive_overview():
     # -----------------------------
     # LOAD DATA FROM SESSION
     # -----------------------------
-    company_label = st.session_state.get("exec_wc_company_name", "Selected Company")
+    company_label = st.session_state.get("company_name", "JakeTrucking")
 
-    avoidable_premium = float(st.session_state.get("exec_wc_avoidable_premium", 0.0))
-    financial_drag = float(st.session_state.get("exec_rtw_fi_financial_drag", 0.0))
-    savings_to_date = float(st.session_state.get("exec_wc_savings_to_date", 0.0))
+    avoidable_premium = float(st.session_state.get("exec_wc_avoidable_premium", 45000))
+    financial_drag = float(st.session_state.get("exec_rtw_fi_financial_drag", 30000))
+    savings_to_date = float(st.session_state.get("exec_wc_savings_to_date", 10000))
 
-    rtw_ratio = st.session_state.get("exec_rtw_fi_rtw_ratio")
-    avg_lag = st.session_state.get("exec_avg_lag_days")
-    employees_out = st.session_state.get("exec_employees_out")
+    rtw_ratio = st.session_state.get("exec_rtw_fi_rtw_ratio", 35.0)
+    avg_lag = st.session_state.get("exec_avg_lag_days", 4.0)
+    employees_out = st.session_state.get("exec_employees_out", 3)
 
     total_pressure = avoidable_premium + financial_drag
     total_relief = savings_to_date
@@ -70,26 +70,25 @@ def render_executive_overview():
     with o1:
         st.metric(
             "RTW Ratio (0–4 Days)",
-            f"{rtw_ratio:.1f}%" if rtw_ratio is not None else "N/A"
+            f"{rtw_ratio:.1f}%"
         )
 
     with o2:
-
-                st.metric(
+        st.metric(
             "Average Lag Time",
-            f"{avg_lag:.1f}" if avg_lag is not None else "N/A"
+            f"{avg_lag:.1f}"
         )
 
     with o3:
         st.metric(
             "Employees Out",
-            f"{employees_out}" if employees_out is not None else "N/A"
+            f"{employees_out}"
         )
 
     st.markdown("---")
 
     # -----------------------------
-    # EXECUTIVE SUMMARY
+    # EXECUTIVE SUMMARY (CLOSE)
     # -----------------------------
     st.subheader("Executive Summary")
 
@@ -103,7 +102,7 @@ def render_executive_overview():
 """)
 
     # -----------------------------
-    # SIGNAL (CLOSE)
+    # SIGNAL (FINAL CLOSE)
     # -----------------------------
     if total_pressure > total_relief:
         st.error("⚠️ Current system is losing more than it’s recovering.")
@@ -115,7 +114,7 @@ def render_executive_overview():
     st.markdown("---")
 
     # -----------------------------
-    # SIMPLE PDF EXPORT (SAFE)
+    # SIMPLE PDF EXPORT
     # -----------------------------
     st.subheader("Export")
 
