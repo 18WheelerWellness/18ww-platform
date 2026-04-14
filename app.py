@@ -1276,7 +1276,7 @@ username = st.session_state.get("username", "Demo User")
 st.sidebar.markdown(f"**User:** {username}")
 
 role = st.session_state.get("role", "admin")
-company = st.session_state.get("company_name", "company_name")
+company = st.session_state.get("company_name", "Demo Company")
 
 if role == "admin":
     st.sidebar.markdown(f"**Viewing:** {company}")
