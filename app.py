@@ -1150,7 +1150,7 @@ if "demo_loaded" not in st.session_state:
     if not st.session_state.get("logged_in", False):
         login_screen()
         st.stop()
-        if "demo_loaded" not in st.session_state:
+    if "demo_loaded" not in st.session_state:
     st.session_state["demo_loaded"] = True
 
     # Drivers
