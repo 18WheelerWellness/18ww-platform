@@ -963,6 +963,7 @@ DEFAULT_USERS = {
 
 NAV_GROUPS = {
     "Operations": [
+        "Company Overview",
         "Drivers",
         "Claims",
         "FMS / Static Screen",
@@ -1257,7 +1258,14 @@ page = st.sidebar.radio(
 
 st.title("18WW Platform")
 
-if page == "Drivers":
+if page == "Company Overview":
+    drivers_df = st.session_state.get("driver_cleaned_df", pd.DataFrame())
+    claims_df = st.session_state.get("claims_cleaned_df", pd.DataFrame())
+    company_name = st.session_state.get("company_name", "Demo Company")
+
+    show_company_overview(company_name, drivers_df, claims_df)
+
+elif page == "Drivers":
     show_drivers()
 elif page == "Claims":
     show_claims()
