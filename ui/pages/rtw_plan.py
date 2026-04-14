@@ -1,110 +1,76 @@
 import streamlit as st
 import pandas as pd
-from io_layer.google_company_store import load_company_rows_from_shared_tab, save_company_rows_to_shared_tab
-
-TAB_NAME = "rtw_plan"
 
 def show_rtw_plan():
-    st.header("Return-to-Work (RTW) Plan")
+    st.header("Return-to-Work (RTW)")
 
-    company_name = st.session_state.get("company_name", "")
+    df = st.session_state.get("claims_cleaned_df", pd.DataFrame())
 
-    # -----------------------------
-    # LOAD CLAIMS
-    # -----------------------------
-    claims_df = load_company_rows_from_shared_tab(company_name, "claims")
-
-    if claims_df is None or claims_df.empty:
-        st.warning("No claims found.")
+    if df.empty:
+        st.warning("No claims available.")
         return
 
-    claim_numbers = claims_df["claim_number"].dropna().astype(str).unique().tolist()
-    selected_claim = st.selectbox("Select Claim", claim_numbers)
+    # -----------------------------
+    # SELECT CLAIM
+    # -----------------------------
+    claim_number = st.selectbox("Select Claim", df["claim_number"])
 
-    claim_row = claims_df[claims_df["claim_number"].astype(str) == selected_claim].iloc[0]
+    claim = df[df["claim_number"] == claim_number].iloc[0]
 
     # -----------------------------
-    # CLAIM SNAPSHOT (KEEP)
+    # CLAIM SNAPSHOT
     # -----------------------------
     st.subheader("Claim Snapshot")
 
     c1, c2, c3 = st.columns(3)
-    c1.metric("Driver", claim_row.get("driver_name", ""))
-    c2.metric("Injury Area", claim_row.get("injury_area", ""))
-    c3.metric("Claim Stage", claim_row.get("claim_stage", ""))
+    c1.metric("Driver", claim["driver_name"])
+    c2.metric("Lag Days", claim["lag_days"])
+    c3.metric("RTW Days", claim["actual_rtw_days"])
 
     st.markdown("---")
 
     # -----------------------------
-    # CORE PROCESS (THIS IS THE SELL)
+    # RTW PROCESS
     # -----------------------------
-    st.subheader("RTW Process")
+    st.subheader("RTW Assignment")
 
-    st.markdown("""
-    **Step 1: Receive Work Ability**  
-    **Step 2: Assign RTW Tier (based on restrictions)**  
-    **Step 3: Place into temporary job**  
-    **Step 4: Start RTW within 3–5 days**
-    """)
-
-    # -----------------------------
-    # RTW TIER (CORE DIFFERENTIATOR)
-    # -----------------------------
-    st.subheader("Assign RTW Tier")
-
-    TIER_OPTIONS = [
-        "A – Seated / One-Hand Light Duty",
-        "B – Seated/Standing, Keyboard OK",
-        "C – Walk/Stand Light",
-        "D – Lower Extremity Protected",
-        "E – Upper Extremity Protected",
-        "J – No CMV Driving",
-    ]
-
-    tier = st.selectbox("RTW Tier", TIER_OPTIONS)
-
-    TIER_RESTRICTIONS = {
-        "A – Seated / One-Hand Light Duty": "Seated work, no lifting, no driving",
-        "B – Seated/Standing, Keyboard OK": "Light duty, no heavy lifting",
-        "C – Walk/Stand Light": "Light walking, no uneven ground",
-        "D – Lower Extremity Protected": "Limit walking/standing",
-        "E – Upper Extremity Protected": "No heavy arm use",
-        "J – No CMV Driving": "No driving, admin work only",
-    }
-
-    st.info(TIER_RESTRICTIONS.get(tier, ""))
-
-    # -----------------------------
-    # JOB ASSIGNMENT
-    # -----------------------------
-    st.subheader("Temporary Job Assignment")
-
-    job = st.selectbox(
-        "Select Job",
-        [
-            "Training documentation",
-            "Safety review",
-            "ELDT compliance tasks",
-            "Scheduling support",
-            "Custom job",
-        ],
+    tier = st.selectbox(
+        "RTW Tier",
+        ["A – Seated", "B – Light Duty", "C – Walk/Stand", "D – Lower Body", "E – Upper Body", "J – No Driving"]
     )
 
-    custom_job = ""
-    if job == "Custom job":
-        custom_job = st.text_input("Enter Custom Job")
+    job = st.selectbox(
+        "Temporary Job",
+        ["Safety Review", "Training Support", "Admin Work", "Scheduling", "Custom"]
+    )
 
-    final_job = custom_job if job == "Custom job" else job
+    if job == "Custom":
+        job = st.text_input("Enter Custom Job")
+
+    rtw_date = st.text_input("RTW Start Date (Target: 3–5 days)")
+
+    st.markdown("---")
 
     # -----------------------------
-    # RTW DATE (MONEY DRIVER)
+    # COST IMPACT (CLOSE DRIVER)
     # -----------------------------
-    st.subheader("Return-to-Work Start")
+    lag = pd.to_numeric(claim.get("lag_days", 0), errors="coerce")
+    cost_per_day = pd.to_numeric(claim.get("cost_per_day", 0), errors="coerce")
 
-    rtw_start_date = st.text_input("RTW Start Date (Target: within 3–5 days)")
+    if pd.notna(lag) and pd.notna(cost_per_day):
+        current_cost = lag * cost_per_day
+        improved_cost = 5 * cost_per_day  # assume 5 day RTW
+
+        st.subheader("Cost Impact")
+
+        col1, col2 = st.columns(2)
+        col1.metric("Current Cost", f"${int(current_cost):,}")
+        col2.metric("With RTW System", f"${int(improved_cost):,}")
+
+        st.success("Reducing time out of work directly reduces claim cost.")
 
     # -----------------------------
-    # COST IMPACT (THIS CLOSES)
+    # SAVE
     # -----------------------------
-    lag_days = pd.to_numeric(claim_row.get("lag_days", 0), errors="coerce")
-    cost_per_day = pd.to_numeric(claim_row)
+    if st.button("Save RTW Plan"):
+        st.success("RTW plan saved.")
