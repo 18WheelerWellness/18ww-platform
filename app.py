@@ -4,6 +4,11 @@ import random
 import os
 import json
 
+from ui.pages.drivers import show_drivers
+from ui.pages.claims import show_claims
+from ui.pages.rtw_plan import show_rtw_plan
+from ui.pages.executive_overview import render_executive_overview
+
 # -----------------------------
 # USER SYSTEM
 # -----------------------------
@@ -140,6 +145,11 @@ if st.sidebar.button("Log Out"):
 fleet_size = st.sidebar.selectbox(
     "Fleet Size",
     ["Small", "Medium", "Large"]
+)
+
+page = st.sidebar.radio(
+    "Page",
+    ["Overview", "Drivers", "Claims"]
 )
 
 # -----------------------------
