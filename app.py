@@ -1246,7 +1246,7 @@ selected_group = st.sidebar.selectbox(
 
 page_options = nav_groups[selected_group]
 
-default_page = "Drivers" if selected_group == "Operations" and "Drivers" in page_options else page_options[0]
+default_page = "Company Overview" if selected_group == "Operations" and "Company Overview" in page_options else page_options[0]
 if st.session_state.get("nav_page_radio") not in page_options:
     st.session_state["nav_page_radio"] = default_page
 
