@@ -1,76 +1,53 @@
 import streamlit as st
 import pandas as pd
-from io_layer.google_company_store import load_company_rows_from_shared_tab
-
-CLAIMS_TAB_NAME = "claims"
-
 
 def show_claims():
     st.header("Claims")
 
-    company_name = st.session_state.get("company_name", "")
-
-    # -----------------------------
-    # LOAD DATA (quietly)
-    # -----------------------------
-    try:
-        df = load_company_rows_from_shared_tab(company_name, CLAIMS_TAB_NAME)
-        if df is None:
-            df = pd.DataFrame()
-    except Exception:
-        df = pd.DataFrame()
+    df = st.session_state.get("claims_cleaned_df", pd.DataFrame())
 
     if df.empty:
-        st.info("No claims found for this company.")
+        st.warning("No claims found.")
         return
 
-    claims_df = df.copy()
+    # -----------------------------
+    # CLEAN DATA
+    # -----------------------------
+    df["lag_days"] = pd.to_numeric(df.get("lag_days", 0), errors="coerce")
+    df["actual_rtw_days"] = pd.to_numeric(df.get("actual_rtw_days", 0), errors="coerce")
+    df["cost_per_day"] = pd.to_numeric(df.get("cost_per_day", 0), errors="coerce")
 
     # -----------------------------
-    # CLEAN KEY FIELDS
-    # -----------------------------
-    for col in ["lag_days", "actual_rtw_days", "cost_per_day"]:
-        if col not in claims_df.columns:
-            claims_df[col] = 0
-
-    claims_df["lag_days"] = pd.to_numeric(claims_df["lag_days"], errors="coerce")
-    claims_df["actual_rtw_days"] = pd.to_numeric(claims_df["actual_rtw_days"], errors="coerce")
-    claims_df["cost_per_day"] = pd.to_numeric(claims_df["cost_per_day"], errors="coerce")
-
-    # -----------------------------
-    # SUMMARY (TOP PRIORITY)
+    # TOP METRICS (PAIN)
     # -----------------------------
     st.subheader("Claims Overview")
 
     col1, col2, col3, col4 = st.columns(4)
 
-    with col1:
-        st.metric("Total Claims", len(claims_df))
+    col1.metric("Total Claims", len(df))
+    col2.metric("Avg Lag Days", round(df["lag_days"].mean(), 1))
+    col3.metric("Avg RTW Days", round(df["actual_rtw_days"].mean(), 1))
 
-    with col2:
-        open_claims = claims_df["claim_status"].astype(str).str.contains(
-            "open|active|pending", case=False, na=False
-        ).sum() if "claim_status" in claims_df.columns else 0
-        st.metric("Open Claims", int(open_claims))
+    total_cost = (df["actual_rtw_days"] * df["cost_per_day"]).sum()
+    col4.metric("Estimated Cost", f"${int(total_cost):,}")
 
-    with col3:
-        avg_lag = round(claims_df["lag_days"].mean(), 1) if claims_df["lag_days"].notna().any() else 0
-        st.metric("Avg Lag Days", avg_lag)
+    st.markdown("**Lag time and delayed return-to-work are the biggest drivers of claim cost.**")
 
-    with col4:
-        avg_rtw = round(claims_df["actual_rtw_days"].mean(), 1) if claims_df["actual_rtw_days"].notna().any() else 0
-        st.metric("Avg RTW Days", avg_rtw)
-
-    # -----------------------------
-    # PROBLEM CALLOUT
-    # -----------------------------
     st.markdown("---")
-    st.markdown("**Most claim cost comes from delays in reporting and delayed return-to-work.**")
 
     # -----------------------------
-    # SIMPLE COST VIEW (HIGH IMPACT)
+    # CLAIMS TABLE
     # -----------------------------
-    if "cost_per_day" in claims_df.columns:
-        claims_df["estimated_cost"] = claims_df["actual_rtw_days"] * claims_df["cost_per_day"]
+    st.subheader("Claims Detail")
 
-        total_cost = claims_df
+    display_cols = [
+        "claim_number",
+        "driver_name",
+        "lag_days",
+        "actual_rtw_days",
+        "claim_status"
+    ]
+
+    existing_cols = [c for c in display_cols if c in df.columns]
+
+    st.dataframe(df[existing_cols], use_container_width=True)
